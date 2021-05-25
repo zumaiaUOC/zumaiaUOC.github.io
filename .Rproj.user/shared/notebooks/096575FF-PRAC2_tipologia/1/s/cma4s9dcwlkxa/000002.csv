@@ -1,0 +1,4 @@
+"0","cardio_clean$group_weight <- cut(cardio_clean$weight,"
+"0","                                 breaks = c(-Inf,80,120,160,Inf),"
+"0","                                 labels = c(""(-Inf, 80)"", ""(81, 120)"","
+"0","                                            ""(121, 160)"", ""(161, Inf)""))"

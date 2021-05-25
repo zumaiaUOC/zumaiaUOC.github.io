@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "/home/oscar/Documentos/MASTER UOC/Tipologia y Ciclo de vida de los datos/PRAC_2/prac_2/renv/library/R-4.1/x86_64-pc-linux-gnu",
+        "installDependencies": true
+    }
+}

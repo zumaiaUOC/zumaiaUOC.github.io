@@ -1,0 +1,7 @@
+"0",""
+"0","# Calculamos el área bajo la curva de ROC (AUC)"
+"0","perf_2 <- ROCR::performance(pred, ""auc"")"
+"0","cat(""El área bajo la curva de ROC (AUC) es: "", perf_2@y.values[[1]])"
+"1","El área bajo la curva de ROC (AUC) es: "
+"1"," "
+"1","0.6845992"

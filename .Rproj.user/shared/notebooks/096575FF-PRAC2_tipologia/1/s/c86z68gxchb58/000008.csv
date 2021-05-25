@@ -1,0 +1,8 @@
+"0","# Warning: When comparing models, please note that probably not all models were "
+"0","# fit from ame data."
+"0","lm1 <- lm(age~cardiovascular_disease, data=cardio_train)"
+"0","lm2 <- lm(age~cardiovascular_disease+height, data=cardio_train)"
+"0","lm3 <- lm(age~cardiovascular_disease+height+weight, data=cardio_train)"
+"0","lm4 <- lm(age~cardiovascular_disease+smoking+height+weight, data=cardio_train)"
+"0","lm5 <- lm(age~cardiovascular_disease+gender+smoking+height+"
+"0","            weight, data=cardio_train)"

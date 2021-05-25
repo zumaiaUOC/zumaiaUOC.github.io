@@ -1,0 +1,7 @@
+"0","# source(""loadPackages.R"")"
+"0",""
+"0","#packages <- c(""ggplot2"", ""ggpubr"",""readr"", ""plotly"", ""tidyverse"", ""lubridate"",""magrittr"",""funModeling"",""skrim"",""dplyr"",""nortest"", ""caret"", ""rpart"",""rpart.plot"",""pROC"",""ROCR"")"
+"0","packages <- c(""readr"", ""ggplot2"", ""dplyr"", ""tidyverse"", ""skimr"", ""funModeling"", ""tibble"", ""ggpubr"", ""plotly"", ""nortest"", ""caret"", ""e1071"", ""pROC"", ""rpart"", ""rpart.plot"", ""ROCR"")"
+"0","new <- packages[!(packages %in% installed.packages()[,""Package""])]"
+"0","if(length(new)) install.packages(new)"
+"0","a=lapply(packages, require, character.only=TRUE)"

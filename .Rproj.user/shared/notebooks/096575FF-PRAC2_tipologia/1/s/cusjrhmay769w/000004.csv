@@ -1,0 +1,4 @@
+"0","rpart_tree <- rpart(formula = cardiovascular_disease~., data = cardio_train)"
+"0",""
+"0","# Visualizamos el árbol de decisión"
+"0","rpart.plot(rpart_tree)"

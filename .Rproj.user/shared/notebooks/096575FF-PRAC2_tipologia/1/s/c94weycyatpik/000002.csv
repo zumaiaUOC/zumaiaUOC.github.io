@@ -1,0 +1,6 @@
+"0","# Creamos la variable"
+"0","cardio$imc <- (cardio$weight)/((cardio$height)/100)^2"
+"0",""
+"0","# Creamos un nuevo dataset en el que borramos las observaciones donde el IMC"
+"0","# sea menor que 18."
+"0","cardio_clean <- cardio[!(cardio$imc < 15),]"

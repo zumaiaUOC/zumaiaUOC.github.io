@@ -1,0 +1,4 @@
+"0","group <- NA"
+"0","group[cardio_clean$age < 45] <- 1"
+"0","group[cardio_clean$age >= 45 & cardio_clean$age <= 60] <- 2"
+"0","group[cardio_clean$age > 60] <- 3"

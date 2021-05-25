@@ -1,0 +1,4 @@
+"0","cfmtx <- confusionMatrix(table(predicted_class,"
+"0","                      cardio_test[[""cardiovascular_disease""]]),"
+"0","                positive = ""Sí"")"
+"0","fourfoldplot(cfmtx$table)"
