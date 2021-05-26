@@ -1,5 +1,0 @@
-"0","cardio_clean$group_imc <- cut(cardio_clean$imc,"
-"0","                              breaks = c(-Inf,18.5,24.9,29.9,Inf),"
-"0","                              labels = c(""Peso inferior al normal"","
-"0","                                         ""Peso normal"", ""Sobrepeso"","
-"0","                                         ""Obesidad""))"

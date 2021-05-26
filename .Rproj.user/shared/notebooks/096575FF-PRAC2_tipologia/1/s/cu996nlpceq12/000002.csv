@@ -1,5 +1,0 @@
-"0","cardio_clean$group_height <- cut(cardio_clean$height,"
-"0","                                 breaks = c(-Inf,150,165,180,195,Inf),"
-"0","                                 labels = c(""(-Inf, 150)"", ""(151, 165)"","
-"0","                                            ""(166, 180)"", ""(181, 195)"","
-"0","                                            ""(196, Inf)""))"

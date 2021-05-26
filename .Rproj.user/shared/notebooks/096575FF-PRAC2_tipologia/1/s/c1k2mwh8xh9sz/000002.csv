@@ -1,8 +1,0 @@
-"0","cardio <- read.csv('data/cardio_train.csv', sep = ';', header = FALSE, skip = 1)"
-"0",""
-"0","# Le damos nombre a las variables para una mejor compresión que los que vienen"
-"0","# por defecto"
-"0","colnames(cardio) <-c('id', 'age', 'gender', 'height', 'weight',"
-"0","                     'systolic_blood_pressure', 'diastolic_blood_pressure',"
-"0","                     'cholesterol', 'glucose', 'smoking', 'alcohol_intake',"
-"0","                     'physical_activity', 'cardiovascular_disease')"

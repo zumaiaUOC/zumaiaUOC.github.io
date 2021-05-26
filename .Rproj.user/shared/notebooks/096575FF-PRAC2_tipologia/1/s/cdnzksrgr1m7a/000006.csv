@@ -1,4 +1,0 @@
-"0","probs <- predict(rpart_tree, cardio_test, type = ""prob"")[,2]"
-"0","pred <- prediction(probs, cardio_test$cardiovascular_disease)"
-"0","perf <- ROCR::performance(pred, ""tpr"" , ""fpr"")"
-"0","plot(perf,col=""red"", main=""mlr_parameters_ROC"")"

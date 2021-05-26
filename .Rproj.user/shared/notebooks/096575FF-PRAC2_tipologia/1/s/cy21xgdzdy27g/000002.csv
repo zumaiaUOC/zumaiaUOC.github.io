@@ -1,2 +1,0 @@
-"0","set.seed(666)"
-"0","cardio_clean_factor <- cardio_clean_factor[sample(nrow(cardio_clean_factor)),]"
