@@ -6,6 +6,12 @@ degree: "Master Ciencia de datos"
 institute: "Universitat Oberta de Catalunya"
 toc-title: Índice
 output:
+  pdf_document: 
+    latex_engine: xelatex
+    highlight: zenburn
+    toc: yes
+    fig_caption: yes
+    keep_tex: yes
   html_document:
     highlight: default
     code_folding: show   # mostrar boton para mostrar o no el código
@@ -18,15 +24,7 @@ output:
     toc_depth: 3
     includes:
       in_header: header.html
-  pdf_document:
-    latex_engine: xelatex
-    highlight: zenburn
-    toc: yes
-    toc_depth: 3
-    number_sections: no
-    fig_caption: yes
   word_document: default
-urlcolor: blue
 header-includes:
       - \usepackage{fancyhdr}
       - \usepackage{graphicx}
@@ -35,6 +33,7 @@ header-includes:
       - \fancyfoot[L]{\includegraphics[width=4cm]{footer.png}}
       - \fancyfoot[C]{Álvaro Rodríguez Pardo, Oscar Rojo Martín}
       - \fancyfoot[R]{\thepage}
+always_allow_html: yes
 ---
 
 ```{r include = FALSE}
@@ -67,11 +66,13 @@ cat("\014")
 
 ### Carga de librerias
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # source("loadPackages.R")
 
-#packages <- c("ggplot2", "ggpubr","readr", "plotly", "tidyverse", "lubridate","magrittr","funModeling","skrim","dplyr","nortest", "caret", "rpart","rpart.plot","pROC","ROCR")
-packages <- c("readr", "ggplot2", "dplyr", "tidyverse", "skimr", "funModeling", "tibble", "ggpubr", "plotly", "nortest", "caret", "e1071", "pROC", "rpart", "rpart.plot", "ROCR")
+packages <- c("ggplot2","ggpubr","readr","plotly","tidyverse","lubridate",
+              "magrittr","funModeling","skimr","dplyr","nortest","caret",
+              "rpart","rpart.plot","pROC","ROCR","performance","see", "plotrix",
+              "e1071","interplot","bayestestR","rstanarm")
 new <- packages[!(packages %in% installed.packages()[,"Package"])]
 if(length(new)) install.packages(new)
 a=lapply(packages, require, character.only=TRUE)
@@ -124,13 +125,11 @@ dim(cardio)
 # Clases de las variables y valores de las primeras observaciones
 str(cardio)
 
-# Muestra de manera compacta la estructura interna de un objeto
-
-glimpse(cardio)
-
 # Resumen de las estadísticas principales de las variables
 summary(cardio)
+```
 
+```{r}
 # Resumen general
 skimr::skim(cardio)
 
@@ -219,7 +218,7 @@ dbp <- ggplot(cardio, aes(y=diastolic_blood_pressure)) +
                      notch=FALSE)
 
 # Graficamos los boxplots en un mismo layout
-ggpubr::ggarrange(a,h,w,sbp,dbp, ncol = 2)
+ggarrange(a,h,w,sbp,dbp, ncol = 2)
 ```
 
 También podemos representar una serie de gráficos que comparan dos variables y ver como se distribuyen las observaciones, diferenciando a su vez por las categorías de una tercera variable
@@ -328,13 +327,19 @@ ggarrange(a,h,w,i,sbp,dbp,bp, ncol = 2)
 Como vemos aún se aprecian valores atípicos, pero estos tienen sentido y pueden aportar información valiosa sobre los pacientes del dataset, por lo que tomaremos la decisión de no tratarlos y seguir el estudio con ellos.
 
 
+Por último en este apartado guardamos el dataset limpio con el nombre ***cardio_clean.csv***  
+```{r}
+write.csv(cardio_clean,'data/cardio_clean.csv')
+```
+
+
 \pagebreak
 
 # 4. Análisis de datos
 
 ## 4.0. EDA
 
-### Matriz con gráficos de dispersión de las variables cuantitativas
+### 4.0.1 Matriz con gráficos de dispersión de las variables cuantitativas
 
 ```{r}
 group <- NA
@@ -343,31 +348,30 @@ group[cardio_clean$age >= 45 & cardio_clean$age <= 60] <- 2
 group[cardio_clean$age > 60] <- 3
 ```
 
-
 ```{r}
-# Equivalent with a formula
-pairs(~ height + weight + diastolic_blood_pressure+diastolic_blood_pressure + imc, data = cardio_clean,   # Variable names
-      col = c("red", "cornflowerblue", "purple")[group],   # Change color by group
-      pch = c(8, 18, 1)[group], 
-      main = "Pairs Cardio",    # Title of the plot
-      row1attop = TRUE,         # If FALSE, changes the direction of the diagonal
-      gap = 1,                  # Distance between subplots
-      cex.labels = NULL,        # Size of the diagonal text
-      font.labels = 1)
-
+pairs(~ height+weight+diastolic_blood_pressure+diastolic_blood_pressure+imc,
+      data = cardio_clean, col = c("red", "cornflowerblue", "purple")[group],
+      pch = c(8, 18, 1)[group], main = "Pairs Cardio",row1attop = TRUE,
+      gap = 1,cex.labels = NULL, font.labels = 1)
 ```
 
 
-### Calcula los coeficientes de correlación entre variables
+### 4.0.2 Cálculo de los coeficientes de correlación entre variables
 
 ```{r}
-# solo para varialbes númericos
+# Solo para variables númericas
 cor(cardio_clean[sapply(cardio_clean, is.numeric)])
 ```
+
+En este apartado calculamos la correlación entre todas la variables, convirtiendo las variables categóricas en numericas.
+
 ```{r}
+# Para variables numéricas y no numéricas. Será necesario transformar
+# todas las variables en tipo numérico antes
 cardio_numeric <- data.frame(lapply(cardio_clean, function(x) as.numeric(x)))
 cor(cardio_numeric)
 ```
+
 
 
 ## 4.1. Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
@@ -377,7 +381,6 @@ Comenzaremos mediante la variable "edad", la cual dividiremos en varias categor�
 
 ```{r}
 cat("La edad minima es :", min(cardio_clean$age),"\n")
-
 cat("La edad maxima es :", max(cardio_clean$age),"\n")
 ```
 
@@ -496,7 +499,7 @@ for (i in 1:ncol(cardio_clean)) {
   if (i == 1) cat("Variables que no siguen una distribución normal:\n")
   if (is.integer(cardio_clean[,i]) | is.numeric(cardio_clean[,i])) {
     # Como nuestro conjunto de datos es grande, utilizaremos la prueba de
-    # Kolmogorov-Simirnov
+    # Kolmogorov-Smirnov
     p_val = lillie.test(cardio_clean[,i])$p.value
     if (p_val < alpha) {
       cat(col.names[i])
@@ -511,19 +514,34 @@ for (i in 1:ncol(cardio_clean)) {
 
 Vemos como ninguna variable numérica sigue una distribución normal ya que el p-valor ha sido menor que el valor de aplha y, por lo tanto, no se puede aceptar la hipótesis nula de normalidad.
 
-Debido a que no se cumple la hipótesis de normalidad, para el estudio de la homogeneidad de la varianza utilizaremos el test no paramétrico de [Fligner-Killeenque](https://rpubs.com/Joaquin_AR/218466), el cual compara las varianzas basándose en la mediana. La hipótesis en este caso es
+Debido a que no se cumple la hipótesis de normalidad, para el estudio de la homogeneidad de la varianza utilizaremos el test no paramétrico de [Fligner-Killeen](https://rpubs.com/Joaquin_AR/218466), el cual compara las varianzas basándose en la mediana. La hipótesis en este caso es
 
 $H_0: \sigma^2_x = \sigma^2_y \\ H_1: \sigma^2_x \neq \sigma^2_y$
 
-
-#######PENSAR QUE GRUPOS SERÍAN INTERESANTES PARA ESTUDIAR EN ESTE CASO######
+Lo que haremos será estudiar la homocedasticidad de la varianza de cada variable numérica del dataset en cuanto a los grupos conformados por las personas que sufren una enfermedad cardiovascular frente a las que no la padecen
 
 ```{r}
-# Prueba para las variables blood_pressure y group_imc
-fligner.test(imc ~ group_imc, data = cardio_clean)
+alpha = 0.05
+col.names = colnames(cardio_clean)
+for (i in 1:ncol(cardio_clean)) {
+  if (i == 1) cat("Variables cuya varianza no es homogénea:\n")
+  if (is.integer(cardio_clean[,i]) | is.numeric(cardio_clean[,i])) {
+    # Como no se cumple la hipótesos de normalidad, usamos el test de
+    # Fligner-Killeen
+    p_val = fligner.test(cardio_clean[,i] ~ cardiovascular_disease,
+                         cardio_clean)$p.value
+    if (p_val < alpha) {
+      cat(col.names[i])
+      
+      # Establecemos cómo queremos ver la salida que muestra el bucle
+      if (i < ncol(cardio_clean) - 1) cat(", ")
+      if (i %% 3 == 0) cat("\n")
+    }
+  }
+}
 ```
 
-Como el p-valor es menor que 0.05, no se puede aceptar la hipótesis nula, por lo que las varianzas son heterocedásticas (no homogéneas).
+Como el p-valor es menor que 0.05 para cada una de las variables, no se puede aceptar la hipótesis nula, por lo que las varianzas de las muestras son heterocedásticas (no homogéneas).
 
 
 ## 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis, correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.
@@ -601,8 +619,9 @@ t.test(cardio_clean$blood_pressure[cardio_clean$cardiovascular_disease=="Sí"],
 
 Obtenemos un p-valor menor que 0.05, por lo que, con un 95% de confianza, no podemos aceptar la hipótesis nula, es decir, las presión arterial media es mayor en personas con enfermedades cardiovasculares que en personas sanas, resultado que era de esperarse.
 
+### 4.3.1 Regresión Lineal
 
-Realizaremos a continuación un algoritmo de clasificación, la regresión logística, cuya variable dependiente o endógena será "cardiovascular_disease". Elegiremos una serie de variables independientes o exógenas y no incluiremos aquellas que puedan presentar problemas de multicolinealidad
+Ahora, vamos a ver con resúmenes tabulares y gráficos que comparan los índices de rendimiento de los modelos. Para ello realizaremos una serie de regresiones lineales en las cuales intentaremos explicar la edad en base a una serie de variables. Empezaremos por una regresión lineal simple e iremos añadiendo en las siguientes una variable más
 
 ```{r}
 # Elegimos 2/3 para el conjunto de entrenamiento
@@ -615,13 +634,8 @@ train_ind <- sample(seq_len(nrow(cardio_clean)), size = smp_size)
 # Establecemos lo conjuntos de entrenamiento y prueba
 cardio_train <- cardio_clean[train_ind, ]
 cardio_test <- cardio_clean[-train_ind, ]
-```
 
-Vamos a ver con resúmenes tabulares y gráficos que comparan los índices de rendimiento de los modelos.
-
-```{r}
-# Warning: When comparing models, please note that probably not all models were 
-# fit from ame data.
+# Realizamos varias regresiones lineales
 lm1 <- lm(age~cardiovascular_disease, data=cardio_train)
 lm2 <- lm(age~cardiovascular_disease+height, data=cardio_train)
 lm3 <- lm(age~cardiovascular_disease+height+weight, data=cardio_train)
@@ -631,26 +645,31 @@ lm5 <- lm(age~cardiovascular_disease+gender+smoking+height+
 ```
 
 ```{r}
+# Vemos las estadísticas de la última regresión hecha, que es la que más
+# variables posee
 summary(lm5)
 ```
 
+La regresión tiene una bondad del ajuste (R cuadrado) del 66.37%, lo que significa que las variables exógenas explican en ese porcentaje a la variable endógena (age). Además, vemos cómo todas las variables son significativas al 0.1%. En cuanto a la que más influye sobre la edad, esta es tener una enfermedad cardiovascular frente a no tenerla (categoría de referencia), pues aumenta la edad en 3.06 años. Esto puede indicar cómo las personas con este tipo de enfermedades tienden a ser mayores.
 
 ```{r}
-library(performance)
 comp <- compare_performance(lm1, lm2, lm3, lm4, lm5)
 comp
 ```
 
 ```{r}
-library(see)
-
 plot(comp)
 ```
 
 
-Realizamos ahora la regresion con varias variables
+### 4.3.2 Regresión Logistica
+
+Realizaremos a continuación un algoritmo de clasificación, la regresión logística, cuya variable dependiente o endógena será "cardiovascular_disease". Elegiremos una serie de variables independientes o exógenas y no incluiremos aquellas que puedan presentar problemas de multicolinealidad
 
 ```{r}
+# Utilizamos los mismos conjuntos de entrenamiento y prueba que creamos
+# para las regresiones lineales
+
 # Realizamos la regresión
 logit_model <- glm(formula=cardiovascular_disease~age+gender+smoking+
                    physical_activity+group_imc+glucose+alcohol_intake+
@@ -662,7 +681,7 @@ summary(logit_model)
 ```
 
 Si nos fijamos en la significancia de las variables, solo hay una categoría no significativa (glucose: Por encima de lo normal). En cuanto a las demás, todas son significativas al 0.1% excepto dos categorías que son significativas al 1% (smoking: Sí; alcohol_intake: Sí).  
-Para ver el incremento o decremento en términos de probabilidad de cada variable exógena sobre la variable endógena debemos estudiar los Odd Ratio (OR)
+Para ver el incremento o decremento en términos de probabilidad de cada variable exógena sobre la variable endógena debemos estudiar los Odds Ratio (OR)
 
 ```{r}
 exp(coefficients(logit_model))
@@ -761,7 +780,6 @@ rpart_tree <- rpart(formula = cardiovascular_disease~., data = cardio_train)
 rpart.plot(rpart_tree)
 ```
 
-
 Calculamos la matriz de confusión para ver la calidad del modelo
 
 ```{r}
@@ -791,16 +809,14 @@ perf <- ROCR::performance(pred, "tpr" , "fpr")
 plot(perf,col="red", main="Curva ROC")
 abline(0,1, lty = 8, col = "grey")
 
-```
-```{r}
-
 # Calculamos el área bajo la curva de ROC (AUC)
 perf_2 <- ROCR::performance(pred, "auc")
 cat("El área bajo la curva de ROC (AUC) es: ", perf_2@y.values[[1]])
-
 ```
 
 Fijándonos en el valor del AUC, podemos afirmar que el modelo tiene una probabilidad del 68.46% de clasificar a los pacientes enfermos como enfermos y a los no enfermos como sanos.
+
+### 4.3.1 Arbol de decisión
 
 Pasamos a estudiar la importancia de las variables exógenas en el árbol de decisión
 
@@ -817,11 +833,11 @@ df2 <- df %>%
         dplyr::rename("variable" = rowname) %>% 
         dplyr::arrange(imp) %>%
         dplyr::mutate(variable = forcats::fct_inorder(variable))
-ggplotly(ggplot(df2) +
+ggplot2::ggplot(df2) +
         geom_col(aes(x = variable, y = imp),
                  col = "black", fill=rainbow(n=length(df$imp)),
                  show.legend = F) + coord_flip() + scale_fill_grey() +
-        theme_bw())
+        theme_bw()
 ```
 
 Vemos que no todas las variables que se han utilizado para clasificar la variable objetivo son importantes. Solo las cuatro que vemos en el gráfico son aquellas que el árbol ha tenido en cuenta para dicha clasificación, mientras que el resto han sido desechadas.
@@ -833,11 +849,138 @@ Vemos que no todas las variables que se han utilizado para clasificar la variabl
 
 
 
+Dado que hemos desarrollado este punto en el punto 4, en este apartado vamos a aportar información visual adicional y aplicaremos el algoritmo Naive Bayes.
+
+### 5.1 Tabla del dataset
+
+Los datos del dataset utilizado para la aplicación de los algoritmos y tras la correspondiente ETL es:
+
+
+```{r}
+# Desactivado para generar el PDF
+library(DT)
+datatable(cardio_clean, filter = 'bottom', options = list(pageLength = 5))
+```
+
+### 5.2 Representaciones gráficas
+
+Represantamos mediante un histograma la frecuencia de Enfermos Cardiovasculares relacionados con la Edad   
+
+```{r}
+ggplotly(ggplot(cardio_clean,aes(x=age,fill=cardiovascular_disease)) + geom_histogram(binwidth = 1,color="black") + labs(x = "Age",y = "Frequency", title = "Enfermos cardiovasculares por edad"))
+```
+
+
+Ahora vemos como se reparte los enfermos repartidos por el Sexo, Edad e IMC
+
+
+```{r}
+#library(plotrix)
+shecol<-list( c("red","green"), c("pink","lightblue"),
+  c("blue","gold","green"),c("#000000","#dddd00","#886600","#ee8800"))
+
+data<- cardio_clean %>%
+  dplyr::select(cardiovascular_disease, gender,  group_age, group_imc)
+
+sizetree(data,main="Enfermedad VS sexo VS edad, VS IMC",
+  col=shecol,toplab=c("Enfermo" ,"Sexo", "Edad" ,"IMC"))
+```
+
+
+### 5.3 Algoritmo Naive Bayes
+
+Naive Bayes es un modelo de predicción basado en la probabilidad Bayesiana. El modelo es muy simple, pero poderoso, en cuanto que es resultado directo de los datos y su tratamiento con simple estadística bayesiana de la probabilidad condicionada. Hay que tener en cuenta que se asume, por simplificación que las variables son todas sucesos independientes.
+
+El modelo bayesiano de probabilidad condicionada se representa como: 
+
+$$(P(A|B) = P(A ∩ B) / P(B))$$
+
+Es decir, la probabilidad de que se de el caso $(A)$ dado $(B)$ es igual a la probabilidad de la intersección de A con B $(A cap B)$ partido la probabilidad de $(B)$
+
+Estirando esta formulación llegaríamos al teorema de Bayes cuya expresion mÁs típica es la siguente:
+
+$$(P(A|B) = PP(B|A)*P(A)/P(B)$$
+
+```{r}
+# library(e1071) contains the naivebayes model, for that reason we have to first call this library.
+#library(e1071)
+model_nb<-naiveBayes(cardiovascular_disease~.,data = cardio_train)
+```
+
+Comprobamos el modelo con los datos de entrenamiento y crearmos su matriz de confusión para conocer la precisión del modelo.
+
+```{r}
+cardio_train$pred<-predict(model_nb,cardio_train)
+confusionMatrix(cardio_train$pred,cardio_train$cardiovascular_disease)
+```
+```{r}
+acc_tr_nb<-(16689+13460)/(16689+9197+6387+13460);acc_tr_nb
+```
+
+
+Podemos decir que el algoritmo de Bayes tiene una precisión del 65,92% con los datos de entrenamiento.
+
+Ahora, validar el modelo con los datos de prueba mediante la predicción y la creación de la matriz de confusión.
+
+```{r}
+cardio_test$pred<-predict(model_nb,cardio_test)
+confusionMatrix(cardio_test$pred,cardio_test$cardiovascular_disease)
+```
+```{r}
+acc_tt_nb<-(8339+6570)/22867;acc_tt_nb
+```
+
+
+Podemos concluir que el modelo generado con la ayuda del algoritmo Naive Bayes tiene una precisión del 65,19% o también podemos decir que la tasa de clasificación errónea del algoritmo Naive Bayes es del 34,81%.
+
+
+### 5.4 Relación Enfermemdad vs IMC y Presión Arterial
+
+Supongamos que nos interesa saber cómo afecta la enfermedad a la relación entre el IMC y la presión arterial y cómo afecta el número de cilindros a la relación entre La enfermedad y la presión arterial. Estos efectos condicionales se modelan utilizando un término de interacción multiplicativo de dos vías.
+
+
+```{r}
+# :
+#library(interplot)
+lm_age <- lm(blood_pressure ~ cardiovascular_disease*imc, data=cardio_clean)
+
+interplot(m=lm_age, var1 = "cardiovascular_disease", var2 = "imc", hist = TRUE)
+
+interplot(m = lm_age, var1 = "cardiovascular_disease", var2 = "imc", point = T) +
+  # changing the angle of x labels for a clearer vision
+  theme(axis.text.x  = element_text(angle=90)) +
+  geom_point(size = 2, color = "red")
+
+interplot(m = lm_age, var1 = "cardiovascular_disease", var2 = "imc", ercolor = "blue", esize = 1.5) +
+  geom_point(size = 2, color = "red")
+```
+
+
+### 5.5 Intervalo de densidades de los atributos del dataset
+
+
+```{r}
+#library(bayestestR)
+#library(see)
+#library(rstanarm)
+
+model <- stan_glm(blood_pressure ~ cardiovascular_disease*imc*age*gender, data=cardio_clean)
+
+plot(hdi(model, ci = c(0.05, 0.11, 0.25, 0.5, 0.75, 0.89, 0.95)))
+```
+El intervalo de mayor densidad (posterior) para una muestra de valores es el intervalo más estrecho que contiene el x% de los datos. El HPDI del 90% sería el intervalo más pequeño que contiene el 90% de los datos.
+
 \pagebreak
 
 # 6. Resolución del problema. A partir de los resultados obtenidos, ¿cuáles son las conclusiones? ¿Los resultados permiten responder al problema?
 
-En base al estudio realizado, se han obtenido unos resultados bastante interesantes. En primer lugar, mediante los contrastes de hipótesis realizados hemos visto que, con un 95% de confianza, las presión arterial media es mayor en personas con enfermedades cardiovasculares que en personas sanas. En segundo lugar, gracias al modelo de regresión logística vimos que las variables categóricas que más influyen a al hora de padecer una enfermedad cardiovascular son la hipertensión, el colesterol y el peso de la persona, siendo la precisión de dicho modelo del 66.62%. Finalmente, una vez aplicado otro algoritmo de clasificación como el árbol de decisión se observó que, con una calidad del 65.16% (algo menor que la del modelo anterior), de nuevo, las dos variables que más importancia tienen a la hora de padecer o no una enfermedad cardiovascular fueron la hipertensión y el colesterol, mientras que la tercera variable, a diferencia del modelo de regresión, fue el peso de la persona, seguida de la glucosa en sangre. Por lo tanto, se ha conseguido responder a la pregunta que se formuló al inicio del estudio, ya que ahora podemos afirmar, en base a los resultados obtenidos, que unos niveles de presión en sangre altos (hipertensión) y unos niveles de colesterol muy por encima de lo normal (en este orden) tienen una influencia directa a la hora de aumentar la probabilidad de padecer una enfermedad cardiovascular. Además, un Índice de Masa corporal alto (persona obesa) (en base la regresión logística) o el aumento de la edad (en base al árbol de decisión) son también factores que tienen un peso importante sobre este tipo de enfermedades.
+En base al estudio realizado, se han obtenido unos resultados bastante interesantes.   
+
+En primer lugar, mediante los contrastes de hipótesis realizados hemos visto que, con un 95% de confianza, las presión arterial media es mayor en personas con enfermedades cardiovasculares que en personas sanas. 
+
+En segundo lugar, gracias al modelo de regresión logística vimos que las variables categóricas que más influyen a al hora de padecer una enfermedad cardiovascular son la hipertensión, el colesterol y el peso de la persona, siendo la precisión de dicho modelo del 66.62%. 
+
+Finalmente, una vez aplicado otro algoritmo de clasificación como el árbol de decisión se observó que, con una calidad del 65.16% (algo menor que la del modelo anterior), de nuevo, las dos variables que más importancia tienen a la hora de padecer o no una enfermedad cardiovascular fueron la hipertensión y el colesterol, mientras que la tercera variable, a diferencia del modelo de regresión, fue el peso de la persona, seguida de la glucosa en sangre. Por lo tanto, se ha conseguido responder a la pregunta que se formuló al inicio del estudio, ya que ahora podemos afirmar, en base a los resultados obtenidos, que unos niveles de presión en sangre altos (hipertensión) y unos niveles de colesterol muy por encima de lo normal (en este orden) tienen una influencia directa a la hora de aumentar la probabilidad de padecer una enfermedad cardiovascular. Además, un Índice de Masa corporal alto (persona obesa) (en base la regresión logística) o el aumento de la edad (en base al árbol de decisión) son también factores que tienen un peso importante sobre este tipo de enfermedades.
 
 
 \pagebreak
@@ -846,23 +989,36 @@ En base al estudio realizado, se han obtenido unos resultados bastante interesan
 
 El código realizado en lenguaje R se puede ver en el repositorio de GitHub, concretamente en la carpeta *code*.
 
-Puede consultar el proyecto en:
+\pagebreak
 
-  * ### [GITHUB](https://github.com/zumaiaUOC/zumaiaUOC.github.io)  
+
+# 8. Dónde consultar el proyecto
+
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io" target="_blank" rel="noopener noreferrer">GITHUB</a>
   
-  * ### [DATA](https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/data)    
   
-  * ### [CODE](https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/cod)      
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/data" target="_blank" rel="noopener noreferrer">DATA</a>
+  
+  
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/code" target="_blank" rel="noopener noreferrer">CODE</a>
+  
+  
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/blob/main/PRAC2_tipologia.pdf" target="_blank" rel="noopener noreferrer">PDF</a>
+  
+
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/blob/main/___README.md" target="_blank" rel="noopener noreferrer">README</a>
+
 
 \pagebreak
 
 
-# Contribuciones al trabajo
+# 9. Contribuciones al trabajo
 
 | Contribuciones                | Firma    |
 | ----------------------------- | -------- |
 | Investigación Previa          | ORM, ARP |
 | Redacción de las respuestas   | ORM, ARP |
 | Desarrollo código             | ORM, ARP |
+
 
 
