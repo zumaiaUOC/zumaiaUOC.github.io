@@ -327,6 +327,12 @@ ggarrange(a,h,w,i,sbp,dbp,bp, ncol = 2)
 Como vemos aún se aprecian valores atípicos, pero estos tienen sentido y pueden aportar información valiosa sobre los pacientes del dataset, por lo que tomaremos la decisión de no tratarlos y seguir el estudio con ellos.
 
 
+Por último en este apartado guardamos el dataset limpio con el nombre ***cardio_clean.csv***  
+```{r}
+write.csv(cardio_clean,'data/cardio_clean.csv')
+```
+
+
 \pagebreak
 
 # 4. Análisis de datos
@@ -858,13 +864,15 @@ datatable(cardio_clean, filter = 'bottom', options = list(pageLength = 5))
 
 ### 5.2 Representaciones gráficas
 
-Represantamos mediante un histograma la frecuencia de Enfermos Cardiovasculares relacionados con la Edad
+Represantamos mediante un histograma la frecuencia de Enfermos Cardiovasculares relacionados con la Edad   
+
 ```{r}
 ggplotly(ggplot(cardio_clean,aes(x=age,fill=cardiovascular_disease)) + geom_histogram(binwidth = 1,color="black") + labs(x = "Age",y = "Frequency", title = "Enfermos cardiovasculares por edad"))
 ```
 
 
 Ahora vemos como se reparte los enfermos repartidos por el Sexo, Edad e IMC
+
 
 ```{r}
 #library(plotrix)
@@ -884,10 +892,13 @@ sizetree(data,main="Enfermedad VS sexo VS edad, VS IMC",
 Naive Bayes es un modelo de predicción basado en la probabilidad Bayesiana. El modelo es muy simple, pero poderoso, en cuanto que es resultado directo de los datos y su tratamiento con simple estadística bayesiana de la probabilidad condicionada. Hay que tener en cuenta que se asume, por simplificación que las variables son todas sucesos independientes.
 
 El modelo bayesiano de probabilidad condicionada se representa como: 
+
 $$(P(A|B) = P(A ∩ B) / P(B))$$
 
 Es decir, la probabilidad de que se de el caso $(A)$ dado $(B)$ es igual a la probabilidad de la intersección de A con B $(A cap B)$ partido la probabilidad de $(B)$
+
 Estirando esta formulación llegaríamos al teorema de Bayes cuya expresion mÁs típica es la siguente:
+
 $$(P(A|B) = PP(B|A)*P(A)/P(B)$$
 
 ```{r}
@@ -905,6 +916,8 @@ confusionMatrix(cardio_train$pred,cardio_train$cardiovascular_disease)
 ```{r}
 acc_tr_nb<-(16689+13460)/(16689+9197+6387+13460);acc_tr_nb
 ```
+
+
 Podemos decir que el algoritmo de Bayes tiene una precisión del 65,92% con los datos de entrenamiento.
 
 Ahora, validar el modelo con los datos de prueba mediante la predicción y la creación de la matriz de confusión.
@@ -916,12 +929,16 @@ confusionMatrix(cardio_test$pred,cardio_test$cardiovascular_disease)
 ```{r}
 acc_tt_nb<-(8339+6570)/22867;acc_tt_nb
 ```
+
+
 Podemos concluir que el modelo generado con la ayuda del algoritmo Naive Bayes tiene una precisión del 65,19% o también podemos decir que la tasa de clasificación errónea del algoritmo Naive Bayes es del 34,81%.
 
 
 ### 5.4 Relación Enfermemdad vs IMC y Presión Arterial
 
 Supongamos que nos interesa saber cómo afecta la enfermedad a la relación entre el IMC y la presión arterial y cómo afecta el número de cilindros a la relación entre La enfermedad y la presión arterial. Estos efectos condicionales se modelan utilizando un término de interacción multiplicativo de dos vías.
+
+
 ```{r}
 # :
 #library(interplot)
@@ -968,7 +985,7 @@ Finalmente, una vez aplicado otro algoritmo de clasificación como el árbol de 
 
 \pagebreak
 
-s# 7. Código: Hay que adjuntar el código, preferiblemente en R, con el que se ha realizado la limpieza, análisis y representación de los datos. Si lo preferís, también podéis trabajar en Python.
+# 7. Código: Hay que adjuntar el código, preferiblemente en R, con el que se ha realizado la limpieza, análisis y representación de los datos. Si lo preferís, también podéis trabajar en Python.
 
 El código realizado en lenguaje R se puede ver en el repositorio de GitHub, concretamente en la carpeta *code*.
 
@@ -977,13 +994,19 @@ El código realizado en lenguaje R se puede ver en el repositorio de GitHub, con
 
 # 8. Dónde consultar el proyecto
 
-  * ### [GITHUB](https://github.com/zumaiaUOC/zumaiaUOC.github.io)  
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io" target="_blank" rel="noopener noreferrer">GITHUB</a>
   
-  * ### [DATA](https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/data)    
   
-  * ### [CODE](https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/code)
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/data" target="_blank" rel="noopener noreferrer">DATA</a>
   
-  * ### [PDF](https://github.com/zumaiaUOC/zumaiaUOC.github.io/blob/main/PRAC2_tipologia.pdf)
+  
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/code" target="_blank" rel="noopener noreferrer">CODE</a>
+  
+  
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/blob/main/PRAC2_tipologia.pdf" target="_blank" rel="noopener noreferrer">PDF</a>
+  
+
+  * ### <a href="https://github.com/zumaiaUOC/zumaiaUOC.github.io/blob/main/___README.md" target="_blank" rel="noopener noreferrer">README</a>
 
 
 \pagebreak
