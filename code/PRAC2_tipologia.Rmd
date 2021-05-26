@@ -6,12 +6,6 @@ degree: "Master Ciencia de datos"
 institute: "Universitat Oberta de Catalunya"
 toc-title: Índice
 output:
-  pdf_document: 
-    latex_engine: xelatex
-    highlight: zenburn
-    toc: yes
-    fig_caption: yes
-    keep_tex: yes
   html_document:
     highlight: default
     code_folding: show   # mostrar boton para mostrar o no el código
@@ -24,6 +18,12 @@ output:
     toc_depth: 3
     includes:
       in_header: header.html
+  pdf_document: 
+    latex_engine: xelatex
+    highlight: zenburn
+    toc: yes
+    fig_caption: yes
+    keep_tex: yes
   word_document: default
 header-includes:
       - \usepackage{fancyhdr}
@@ -728,6 +728,7 @@ roc(cardio_train$cardiovascular_disease ~ logit_model$fitted.values,
 
 Podemos apreciar cómo obtenemos un AUC del 72.8%, lo que nos indica que este modelo tiene una probabilidad del 72.8% de clasificar a los pacientes enfermos como enfermos (sensibilidad) y a los exentos de enfermedad como sanos (especificidad).
 
+### 4.3.1 Arbol de decisión
 
 Finalizaremos este apartado realizando otro método de clasificación: el algoritmo de aprendizaje supervisado de árbol de decisión. Así, podremos ver también como clasifica el modelo a las personas del dataset y veremos la precisión que tiene, comparándola con el obtenida mediante el método de regresión logística. Utilizaremos la técnica conocida como CART: Classification And Regression Trees. La implementación particular de CART que usaremos es la Recursive Partitioning and Regression Trees o RPART. De forma general, lo que hace este algoritmo es encontrar la variable independiente que mejor separa nuestros datos en grupos, que se corresponden con las categorías de la variable objetivo. Esta mejor separación es expresada con una regla y a cada regla le corresponde un nodo.
 
@@ -816,7 +817,7 @@ cat("El área bajo la curva de ROC (AUC) es: ", perf_2@y.values[[1]])
 
 Fijándonos en el valor del AUC, podemos afirmar que el modelo tiene una probabilidad del 68.46% de clasificar a los pacientes enfermos como enfermos y a los no enfermos como sanos.
 
-### 4.3.1 Arbol de decisión
+
 
 Pasamos a estudiar la importancia de las variables exógenas en el árbol de decisión
 
