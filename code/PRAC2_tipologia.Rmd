@@ -1,0 +1,868 @@
+---
+title: 'PRA2 - Tipología y ciclo de vida de los datos'
+author: "Álvaro Rodríguez Pardo, Óscar Rojo Martín"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+degree: "Master Ciencia de datos"
+institute: "Universitat Oberta de Catalunya"
+toc-title: Índice
+output:
+  html_document:
+    highlight: default
+    code_folding: show   # mostrar boton para mostrar o no el código
+    number_sections: no
+    theme: cosmo
+    fig_caption: yes
+    df_print: paged
+    toc: yes
+    toc_float: true # tabla contenidos flotante
+    toc_depth: 3
+    includes:
+      in_header: header.html
+  pdf_document:
+    latex_engine: xelatex
+    highlight: zenburn
+    toc: yes
+    toc_depth: 3
+    number_sections: no
+    fig_caption: yes
+  word_document: default
+urlcolor: blue
+header-includes:
+      - \usepackage{fancyhdr}
+      - \usepackage{graphicx}
+      - \pagestyle{fancy}
+      - \setlength{\headheight}{12.69003pt}
+      - \fancyfoot[L]{\includegraphics[width=4cm]{footer.png}}
+      - \fancyfoot[C]{Álvaro Rodríguez Pardo, Oscar Rojo Martín}
+      - \fancyfoot[R]{\thepage}
+---
+
+```{r include = FALSE}
+# Indicamos que todos los chunk se oculten
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+\pagebreak
+
+### Preparado workspace
+```{r}
+# Limpiamos el workspace, por si hubiera algun dataset o informacion cargada
+rm(list = ls())
+
+# Limpiamos la consola
+cat("\014")
+
+# Indicamos el directorio de trabajo
+#setwd("C:\Users\alrop\Desktop\Máster Ciencia de datos UOC\Semestre 2\Tipología y ciclo de vida de los datos\Bloque 3 - Limpieza y análisis de datos\PRA2")
+```
+
+
+
+\pagebreak
+
+### Carga de librerias
+
+```{r}
+# source("loadPackages.R")
+
+#packages <- c("ggplot2", "ggpubr","readr", "plotly", "tidyverse", "lubridate","magrittr","funModeling","skrim","dplyr","nortest", "caret", "rpart","rpart.plot","pROC","ROCR")
+packages <- c("readr", "ggplot2", "dplyr", "tidyverse", "skimr", "funModeling", "tibble", "ggpubr", "plotly", "nortest", "caret", "e1071", "pROC", "rpart", "rpart.plot", "ROCR")
+new <- packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(new)) install.packages(new)
+a=lapply(packages, require, character.only=TRUE)
+```
+
+
+# 1. Descripción del dataset. ¿Por qué es importante y qué pregunta/problema pretende responder?
+
+El conjunto de datos que se utilizará para la práctica se llama Cardiovascular Disease Dataset y se puede encontrar en [kaggle](https://www.kaggle.com/sulianova/cardiovascular-disease-dataset?select=cardio_train.csv). Este contiene 70000 registros que hacen referencia a pacientes, a los cuales se les hace un estudio utilizando 13 variables distintas. Una de estas variables es la variable objetivo, la cual es binaria y explica si el paciente en cuestión padece de una enfermedad cardiovascular o no. En este sentido, este conjunto de datos es importante porque con él podemos estudiar cuáles son los atributos más importantes que tienen una influencia directa sobre las enfermedades cardiovasculares, siendo esta la pregunta principal que se tratará de responder mediante el estudio.  
+Antes de continuar, hagamos un repaso sobre cada una de las variables del dataset:
+
+1. ID: Número de identificación del paciente.
+2. Age: Edad del paciente en días.
+3. Height: Altura del paciente en centímetros.
+4. Weight: Peso del paciente en kilogramos.
+5. Gender: Género del paciente.
+6. Systolic blood pressure: Presión arterial sistólica del paciente.
+7. Diastolic blood pressure: Presión arterial diastólica del paciente.
+8. Cholesterol: Niveles de colesterol del paciente.
+9. Glucose: Niveles de glucosa del paciente.
+10. Smoking: Si el paciente es fumador o no.
+11. Alcohol intake: Si el paciente ingiere alcohol o no.
+12. Physical activity: Si el paciente realiza actividad física o no.
+13. Presence or absence of cardiovascular disease (Variable objetivo): Si el paciente presenta una enfermedad cardiovascular o no.
+
+
+\pagebreak
+
+# 2. Integración y selección de los datos de interés a analizar.
+
+Procedemos a cargar el conjunto de datos
+
+```{r}
+cardio <- read.csv('data/cardio_train.csv', sep = ';', header = FALSE, skip = 1)
+
+# Le damos nombre a las variables para una mejor compresión que los que vienen
+# por defecto
+colnames(cardio) <-c('id', 'age', 'gender', 'height', 'weight',
+                     'systolic_blood_pressure', 'diastolic_blood_pressure',
+                     'cholesterol', 'glucose', 'smoking', 'alcohol_intake',
+                     'physical_activity', 'cardiovascular_disease')
+```
+
+Echamos un vistazo a sus dimensiones, a los tipos de variables que contiene, a un par de observaciones iniciales y al resumen de las estadísticas principales de dichas variables
+
+```{r}
+# Dimensiones del conjunto de datos
+dim(cardio)
+
+# Clases de las variables y valores de las primeras observaciones
+str(cardio)
+
+# Muestra de manera compacta la estructura interna de un objeto
+
+glimpse(cardio)
+
+# Resumen de las estadísticas principales de las variables
+summary(cardio)
+
+# Resumen general
+skimr::skim(cardio)
+
+# Ver zeros, NA, dtype y unique
+funModeling::status(cardio)
+```
+
+Observamos que el dataset contiene 70000 observaciones (filas) y 13 variables (columnas), de las cuales todas son del tipo entero excepto la variable "weight", la cual es del tipo numérico. Si nos fijamos en los valores mínimos y máximos que toman ciertas variables, veremos como se trata de variables catagoricas, por lo que procederemos a transformarlas en tipo factor
+
+```{r}
+cardio$gender <- ifelse(cardio$gender == 1, 'Mujer', 'Hombre')
+cardio$gender <- as.factor(cardio$gender)
+
+cardio$smoking <- ifelse(cardio$smoking == 0, 'No', 'Sí')
+cardio$smoking <- as.factor(cardio$smoking)
+
+cardio$alcohol_intake <- ifelse(cardio$alcohol_intake == 0, 'No', 'Sí')
+cardio$alcohol_intake <- as.factor(cardio$alcohol_intake)
+
+cardio$physical_activity <- ifelse(cardio$physical_activity == 0, 'No', 'Sí')
+cardio$physical_activity <- as.factor(cardio$physical_activity)
+
+cardio$cardiovascular_disease <- ifelse(cardio$cardiovascular_disease == 0,
+                                        'No', 'Sí')
+cardio$cardiovascular_disease <- as.factor(cardio$cardiovascular_disease)
+
+# library(dplyr)
+cardio$cholesterol <- as.factor(cardio$cholesterol)
+cardio$cholesterol <- recode_factor(cardio$cholesterol, '1' = "Normal",
+                                   '2' = "Por encima de lo normal",
+                                   '3' = "Muy por encima de lo normal")
+
+cardio$glucose <- as.factor(cardio$glucose)
+cardio$glucose <- recode_factor(cardio$glucose, '1' = "Normal",
+                                   '2' = "Por encima de lo normal",
+                                   '3' = "Muy por encima de lo normal")
+
+
+# Cambiamos la edad de los pacientes de días a años
+cardio$age <- trunc(cardio$age/365)
+```
+
+Además, la variable "id" hace referencia a la identificación del paciente y esto no es interesante, por lo que la eliminaremos del dataframe
+
+```{r}
+cardio <- cardio[, -1]
+```
+
+Todas las demás variables pueden aportar bastante información valiosa para el estudio, así que estas será las variables de interés a analizar.
+
+\pagebreak
+
+# 3. Limpieza de datos
+
+## 3.1. ¿Los datos contienen ceros o elementos vacíos? ¿Cómo gestionarías cada uno de estos casos?
+
+Veamos si existen valores perdidos (missing values) en el dataset
+
+```{r}
+colSums(is.na(cardio))
+colSums(cardio=="")
+```
+
+Como podemos comprobar, no existen valores perdidos. En el caso de haberlos habido, estos podrían haber sido tratados mediante su reemplazo por la etiqueta "Desconocido", por ejemplo, en el caso de que la variable en cuestión tuviese campos de tipo *string*. Si, por el contrario, se tratase de variables numéricas, podríamos optar por reemplazar los registros perdidos por una misma medida de tendencia central, es decir, por la media o la mediana de ese atributo, dependiendo de la distribución de los datos; o podríamos implementar métodos probabilistas para imputar los valores perdidos mediante el uso de métodos de regresión, inferencias basadas en modelos bayesianos o árboles de decisión.
+
+## 3.2. Estudio de valores atípicos (outliers)
+
+Procederemos a representar gráficamente las variables numéricas a través de sus cuartiles mediante el uso de gráficos de caja (boxplots) para estudiar si existen valores atípicos.
+
+```{r}
+# Guardamos los boxplots en variables
+a <- ggplot(cardio, aes(y=age)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+h <- ggplot(cardio, aes(y=height)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+w <- ggplot(cardio, aes(y=weight)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+sbp <- ggplot(cardio, aes(y=systolic_blood_pressure)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+dbp <- ggplot(cardio, aes(y=diastolic_blood_pressure)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+
+# Graficamos los boxplots en un mismo layout
+ggpubr::ggarrange(a,h,w,sbp,dbp, ncol = 2)
+```
+
+También podemos representar una serie de gráficos que comparan dos variables y ver como se distribuyen las observaciones, diferenciando a su vez por las categorías de una tercera variable
+
+```{r}
+fig <- plot_ly(cardio, x = ~age, y = ~height, color = ~gender, type = "box")
+fig <- fig %>% layout(boxmode = "group")
+
+fig
+
+fig <- plot_ly(cardio, x = ~gender, y = ~height, color = ~cholesterol, type = "box")
+fig <- fig %>% layout(boxmode = "group")
+
+fig
+
+```
+
+Hemos podido observar que todas las variables presentan valores atípicos, los cuales trataremos a medida que vayamos estudiando cada una de las variables. En este sentido, optaremos por eliminar aquellas observaciones extremas que no nos interesen, pues como nuestro conjunto de datos es muy grande podemos eliminar observaciones sin que influya en los resultados finales, pues hay información de sobra.
+
+Comenzaremos creando la variable IMC. El índice de masa corporal (IMC) es una razón matemática que asocia la masa y la talla de un individuo, por lo que las variables "height" y "weight" nos serán de utilidad. En base a [menudiet](https://www.menudiet.es/blog/articulo-que-se-considera-delgadez-extrema#:~:text=Podemos%20hablar%20de%20delgadez%20extrema,sistema%20inmunol%C3%B3gico%20en%20estado%20%C3%B3ptimo.), podemos hablar de delgadez extrema cuando el IMC del paciente está por debajo de 18. Por lo tanto, daremos un margen establecido a criterio personal y eliminaremos del dataset aquellas personas cuyo IMC sea menor que 15, pues se corresponderán con valores muy extremos.  
+Lo primero será crear la nueva variable referente al IMC. El cálculo de este es  $IMC = \frac{Peso(kg)}{Altura^2(m)}$
+
+```{r}
+# Creamos la variable
+cardio$imc <- (cardio$weight)/((cardio$height)/100)^2
+
+# Creamos un nuevo dataset en el que borramos las observaciones donde el IMC
+# sea menor que 18.
+cardio_clean <- cardio[!(cardio$imc < 15),]
+```
+
+Ahora estudiaremos la altura. Veamos el valor máximo y mínimo que puede tomar la variable
+
+```{r}
+min(cardio_clean$height)
+max(cardio_clean$height)
+```
+
+Eliminaremos las observaciones de las personas con una estatura extremadamente baja, las cuales estarían debajo de los 145 centimetros en el caso de los hombres y 136 en el caso de las mujeres, basándonos en la siguiente [web](http://humanphenotypes.net/metrics/height.html). En el caso de personas altas, no es tan extraño ver a alguien con algo más de dos metros, por lo que estas observaciones las dejaremos
+
+```{r}
+cardio_clean <- cardio_clean[!(cardio_clean[, "height"] < 145
+                               & cardio_clean[, "gender"] == 'Hombre'), ]
+cardio_clean <- cardio_clean[!(cardio_clean[, "height"] < 136
+                               & cardio_clean[, "gender"] == 'Mujer'), ]
+```
+
+Las variables presión arterial sistólica (PS) y diastólica (PD) las podemos utilizar para crear la variable referente a la presión arterial media (PAM). Gracias a [MediCalc](http://www.scymed.com/es/smnxph/phgdc016.htm) sabemos que la fórmula para calcular la PAM es $PAM = \frac{PS + 2PD}{3}$. Si recordamos los gráficos de caja para las variables "systolic_blood_pressure" y "diastolic_blood_pressure", estas tenían algunos valores demasiado pequeños y grandes, lo que hace pensar que hayan sido introducidos por error. Si nos fijamos en sus mínimos y máximos
+
+```{r}
+cat("El valor mínimo de 'systolic_blood_pressure' es :",min(cardio$systolic_blood_pressure),"\n")
+cat("El valor mínimo de 'diastolic_blood_pressure' es :",min(cardio$diastolic_blood_pressure),"\n")
+cat("El valor máximo de 'systolic_blood_pressure' es :",max(cardio$systolic_blood_pressure),"\n")
+cat("El valor máximo de 'diastolic_blood_pressure' es :",max(cardio$diastolic_blood_pressure),"\n")
+```
+
+no tiene sentido que una persona tenga valores negativos de presión arterial sistólica o diastólica porque, según se explica en [Mayo Clinic](https://www.mayoclinic.org/es-es/diseases-conditions/low-blood-pressure/symptoms-causes/syc-20355465#), si la primera es menor que 90 mmHg y la segunda es menor que 60 mmHg, la presión es más baja de los normal. Asimismo, tampoco es lógico que alguien tenga estos valores tan sumamente altos ya que, en base a [soyvida](https://www.soyvida.com/hipertension/Presion-alta-Estos-son-los-niveles-normales-de-presion-arterial-20200405-0003.html), unos niveles de presión arterial sistólica y diastólica mayores que 180 y 120, respectivamente, son indicadores de hipertensión. Por lo tanto, a modo de criterio personal elegiremos un margen de 30 mmHg para los valores de presión baja y de 40 mmHg para los de presión alta. Además, utilizando la presión arterial media, eliminaremos también las observaciones cuyos valores de esta sean menores que 40 o mayores que 250. El primer límite lo elegimos de nuevo en base a criterio personal, pues si calculamos la PAM para PS = 90 y PD = 60 obtenemos un resultado de 70 mmHg, así que escogeremos un margen de 30; y el segundo límite lo pondremos en referencia a [MD.SAÚDE](https://www.soyvida.com/hipertension/Presion-alta-Estos-son-los-niveles-normales-de-presion-arterial-20200405-0003.html), en el cual se explica que algunos pacientes llegan a tener 240 o 250 mmHg de presión máxima durante el pico hipertensivo.
+
+```{r}
+# Creamos la variable PAM
+cardio_clean$blood_pressure <- (cardio_clean$systolic_blood_pressure +
+                                  2*cardio_clean$diastolic_blood_pressure)/3
+
+# Eliminamos las observaciones que no nos interesan
+cardio_clean <- cardio_clean[!(
+        cardio_clean[,"systolic_blood_pressure"] < 60), ]
+cardio_clean <- cardio_clean[!(
+        cardio_clean[,"systolic_blood_pressure"] > 220), ]
+cardio_clean <- cardio_clean[!(
+        cardio_clean[,"diastolic_blood_pressure"] < 30), ]
+cardio_clean <- cardio_clean[!(
+        cardio_clean[,"diastolic_blood_pressure"] > 160), ]
+cardio_clean <- cardio_clean[!(cardio_clean[, "blood_pressure"] > 250), ]
+cardio_clean <- cardio_clean[!(cardio_clean[, "blood_pressure"] < 40), ]
+cardio_clean <- cardio_clean[!(cardio_clean[, "blood_pressure"] > 250), ]
+```
+
+Vemos cómo quedan los boxplots de las variables numéricas una vez nos hemos desecho de las observaciones que no necesitábamos
+
+```{r}
+a <- ggplot(cardio_clean, aes(y=age)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+h <- ggplot(cardio_clean, aes(y=height)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+w <- ggplot(cardio_clean, aes(y=weight)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+sbp <- ggplot(cardio_clean, aes(y=systolic_blood_pressure)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+dbp <- ggplot(cardio_clean, aes(y=diastolic_blood_pressure)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+i <- ggplot(cardio_clean, aes(y=imc)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+bp <- ggplot(cardio_clean, aes(y=blood_pressure)) +
+        geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,
+                     notch=FALSE)
+
+ggarrange(a,h,w,i,sbp,dbp,bp, ncol = 2)
+```
+
+Como vemos aún se aprecian valores atípicos, pero estos tienen sentido y pueden aportar información valiosa sobre los pacientes del dataset, por lo que tomaremos la decisión de no tratarlos y seguir el estudio con ellos.
+
+
+\pagebreak
+
+# 4. Análisis de datos
+
+## 4.0. EDA
+
+### Matriz con gráficos de dispersión de las variables cuantitativas
+
+```{r}
+group <- NA
+group[cardio_clean$age < 45] <- 1
+group[cardio_clean$age >= 45 & cardio_clean$age <= 60] <- 2
+group[cardio_clean$age > 60] <- 3
+```
+
+
+```{r}
+# Equivalent with a formula
+pairs(~ height + weight + diastolic_blood_pressure+diastolic_blood_pressure + imc, data = cardio_clean,   # Variable names
+      col = c("red", "cornflowerblue", "purple")[group],   # Change color by group
+      pch = c(8, 18, 1)[group], 
+      main = "Pairs Cardio",    # Title of the plot
+      row1attop = TRUE,         # If FALSE, changes the direction of the diagonal
+      gap = 1,                  # Distance between subplots
+      cex.labels = NULL,        # Size of the diagonal text
+      font.labels = 1)
+
+```
+
+
+### Calcula los coeficientes de correlación entre variables
+
+```{r}
+# solo para varialbes númericos
+cor(cardio_clean[sapply(cardio_clean, is.numeric)])
+```
+```{r}
+cardio_numeric <- data.frame(lapply(cardio_clean, function(x) as.numeric(x)))
+cor(cardio_numeric)
+```
+
+
+## 4.1. Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
+
+Vamos a realizar la discretización de una serie de variables y su posterior visualización, las cuales nos permitirán realizar un análisis más a fondo.  
+Comenzaremos mediante la variable "edad", la cual dividiremos en varias categorías en función de la web [inreality](https://cenique1.zendesk.com/hc/en-us/articles/202487549-What-are-the-age-ranges-for-youth-young-adult-adult-and-senior-in-IntelliSense-). Como en la página web hay varios grupos de edades, lo primero que haremos será ver el valor mínimo y máximo que tiene la variable "edad". Así, podremos ver los grupos de edades mediante los que discretizar
+
+```{r}
+cat("La edad minima es :", min(cardio_clean$age),"\n")
+
+cat("La edad maxima es :", max(cardio_clean$age),"\n")
+```
+
+Como la edad de las personas del dataset comienza en 29, no utilizaremos el primer grupo de edad (Youth (<18)). Crearemos los grupos Adulto Joven (18-35 años), Adulto (36-55 años) y Senior (56 años y mayores)
+
+```{r}
+cardio_clean$group_age <- cut(cardio_clean$age,
+                              breaks = c(18,35,55,Inf),
+                              labels = c("Adulto Joven", "Adulto", "Senior"))
+```
+
+Discretizaremos ahora la altura (height). Como dependiendo del país la altura de las personas varía mucho, no hay un criterio específico para ver si una persona es alta o baja, por lo que cada grupo creado será un intervalo que varíe en 15 centímetros
+
+```{r}
+cardio_clean$group_height <- cut(cardio_clean$height,
+                                 breaks = c(-Inf,150,165,180,195,Inf),
+                                 labels = c("(-Inf, 150)", "(151, 165)",
+                                            "(166, 180)", "(181, 195)",
+                                            "(196, Inf)"))
+```
+
+Haremos lo mismo con la variable "weight", la cual dividiremos en intervalos de 30 kilogramos cada uno
+
+```{r}
+# Vemos los mínimo y máximo de la variable
+cat("El peso minimo es :", min(cardio_clean$weight),"\n")
+cat("El peso máximo es :", max(cardio_clean$weight),"\n")
+```
+
+Discretizamos la variable
+
+```{r}
+cardio_clean$group_weight <- cut(cardio_clean$weight,
+                                 breaks = c(-Inf,80,120,160,Inf),
+                                 labels = c("(-Inf, 80)", "(81, 120)",
+                                            "(121, 160)", "(161, Inf)"))
+```
+
+Podemos discretizar también la variable que creamos referente al IMC para dividir las personas en función del peso. Así, podremos saber si una persona tiene un peso normal o no ya que esta variable esta construida en base al peso y la altura del paciente. En este sentido, nos guiaremos por la web [Center For Disease Control and Prevention](https://www.cdc.gov/healthyweight/assessing/bmi/adult_bmi/index.html)
+
+```{r}
+cardio_clean$group_imc <- cut(cardio_clean$imc,
+                              breaks = c(-Inf,18.5,24.9,29.9,Inf),
+                              labels = c("Peso inferior al normal",
+                                         "Peso normal", "Sobrepeso",
+                                         "Obesidad"))
+```
+
+
+En cuanto a la otra variable que creamos, "blood_pressure", podemos discretizarla gracias a los valores dados por [Seguros Bilbao](https://www.segurosbilbao.com/blog/tension-arterial-valores-normales/#:~:text=La%20tensi%C3%B3n%20arterial%20se%20mide,y%20los%20140%2F90%20mmHg.), en donde se explica que los niveles normales van desde los 90 mmHg para la presión arterial sistólica y los 60mmHg para la diastólia, expresado como 90/60mmHg, hasta los 120/80mmHg. Valores por debajo de los 90/60mmHg significan que la tensión está baja y si está por encima de los 140/90 mmHg existe hipertensión. Además, valores entre los 120/80 mmHg y los 139/89mmHg se consideran normales-altos.
+
+```{r}
+# Discretizamos la variable que acabamos de crear
+cardio_clean$hypertension <- cut(cardio_clean$diastolic_blood_pressure,
+                                 breaks = c(-Inf,((90+2*60)/3),
+                                            ((120+2*80)/3),
+                                            ((139+2*89)/3), Inf),
+                                 labels = c("Tensión baja",
+                                            "Presión arterial normal",
+                                            "Presión arterial normal-alta",
+                                            "Hipertensión"))
+```
+
+Representamos ahora la distribución de las variables discretas que hemos creado junto con el resto de variables de este tipo del dataset mediante gráficos de barras
+
+```{r}
+ga <- ggplot(cardio_clean, aes(group_age)) + geom_bar(fill='grey') +
+  xlab("Edad Discretizada")
+gh <- ggplot(cardio_clean, aes(group_height)) + geom_bar(fill='blue') +
+  theme(axis.text.x = element_text(angle = 25, hjust=1)) +
+  xlab("Altura Discretizada")
+gw <- ggplot(cardio_clean, aes(group_weight)) + geom_bar(fill='pink') +
+  xlab("Peso Discretizada")
+gi <- ggplot(cardio_clean, aes(group_imc)) + geom_bar(fill='lightblue') +
+  theme(axis.text.x = element_text(angle = 25, hjust=1)) +
+  xlab("IMC Discretizada")
+ghy <- ggplot(cardio_clean, aes(hypertension)) + geom_bar(fill='green') +
+  theme(axis.text.x = element_text(angle = 25, hjust=1)) +
+  xlab("Hipertensión Discretizada")
+ge <- ggplot(cardio_clean, aes(gender)) + geom_bar(fill='cadetblue3') +
+  xlab("Género")
+ch <- ggplot(cardio_clean, aes(cholesterol)) + geom_bar(fill='red') +
+  theme(axis.text.x = element_text(angle = 25, hjust=1)) +
+  xlab("Colesterol")
+gl <- ggplot(cardio_clean, aes(glucose)) + geom_bar(fill='purple') +
+  theme(axis.text.x = element_text(angle = 25, hjust=1)) +
+  xlab("Glucosa")
+sm <- ggplot(cardio_clean, aes(smoking)) + geom_bar(fill='yellow') +
+  xlab("Fumador")
+ai <- ggplot(cardio_clean, aes(alcohol_intake)) + geom_bar(fill='brown') +
+  xlab("Ingesta de alcohol")
+pa <- ggplot(cardio_clean, aes(physical_activity)) + geom_bar(fill='orange') +
+  xlab("Actividad física")
+
+# Variable objetivo
+cd <- ggplot(cardio_clean, aes(cardiovascular_disease)) +
+  geom_bar(fill='aquamarine4') +
+  xlab("Enfermedad Cardiovascular")
+
+ggarrange(ga,gh,gw,gi,ghy,ge,ch,gl,sm,ai,pa,cd, ncol = 2)
+```
+
+Podemos ver que las personas que más abundan en el conjunto de datos son aquellas en edad adulta, con una altura entre 1.51 y 1.65 metros, con un peso menor a 80 kilogramos siendo este normal en función del IMC, con una presión arterial normal, mujeres, con un nivel de colesterol y glucosa normales, no son fumadores ni ingieren alcohol, hacen deporte y no tienen una enfermedad cardiovascular, estando este último grupo bastante igualado con las personas que sí la tienen.
+
+## 4.2. Comprobación de la normalidad y homogeneidad de la varianza.
+
+Vamos a estudiar la normalidad de las variables de la muestra. La hipótesis en este caso es
+
+$H_0: X \sim N(\mu, \sigma^2) \\ H_1: X \nsim N(\mu, \sigma^2)$
+
+```{r}
+# Establecemos el valor por defecto de alpha
+alpha = 0.05
+col.names = colnames(cardio_clean)
+for (i in 1:ncol(cardio_clean)) {
+  if (i == 1) cat("Variables que no siguen una distribución normal:\n")
+  if (is.integer(cardio_clean[,i]) | is.numeric(cardio_clean[,i])) {
+    # Como nuestro conjunto de datos es grande, utilizaremos la prueba de
+    # Kolmogorov-Simirnov
+    p_val = lillie.test(cardio_clean[,i])$p.value
+    if (p_val < alpha) {
+      cat(col.names[i])
+      
+      # Establecemos cómo queremos ver la salida que muestra el bucle
+      if (i < ncol(cardio_clean) - 1) cat(", ")
+      if (i %% 3 == 0) cat("\n")
+    }
+  }
+}
+```
+
+Vemos como ninguna variable numérica sigue una distribución normal ya que el p-valor ha sido menor que el valor de aplha y, por lo tanto, no se puede aceptar la hipótesis nula de normalidad.
+
+Debido a que no se cumple la hipótesis de normalidad, para el estudio de la homogeneidad de la varianza utilizaremos el test no paramétrico de [Fligner-Killeenque](https://rpubs.com/Joaquin_AR/218466), el cual compara las varianzas basándose en la mediana. La hipótesis en este caso es
+
+$H_0: \sigma^2_x = \sigma^2_y \\ H_1: \sigma^2_x \neq \sigma^2_y$
+
+
+#######PENSAR QUE GRUPOS SERÍAN INTERESANTES PARA ESTUDIAR EN ESTE CASO######
+
+```{r}
+# Prueba para las variables blood_pressure y group_imc
+fligner.test(imc ~ group_imc, data = cardio_clean)
+```
+
+Como el p-valor es menor que 0.05, no se puede aceptar la hipótesis nula, por lo que las varianzas son heterocedásticas (no homogéneas).
+
+
+## 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis, correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.
+
+Empezaremos planteando la siguiente hipótesis: Nos preguntamos si el Índice de Masa Corporal es igual en hombres y en mujeres. Para esto, realizaremos un contraste de hipótesis de dos muestras sobre la media con varianzas desconocidas.  
+Planteamos la hipótesis nula y alternativa
+
+$H_0: \mu_{hombres} = \mu_{mujeres} \\ H_1: \mu_{hombres} \neq \mu_{mujeres}$
+
+En base al Teorema Central del Límite, si una muestra es lo bastante grande
+(generalmente cuando el tamaño muestral (n) supera los 30), sea cual sea la
+distribución de la media muestral, [seguirá aproximadamente una distribución
+normal](https://www.revistaseden.org/files/8-CAP%208.pdf). Como nuestra muestra sobrepasa por mucho a esta cifra, podemos asumir que se cumple el supuesto de normalidad.
+
+Como no conocemos la varianza de la población, tendremos que aplicar el test estadístico *t student*, pero antes debemos estudiar si estamos ante varianzas desconocidas iguales o diferentes. En este sentido, queremos aplicar el siguiente contraste
+
+$H_0: \sigma^2_1 = \sigma^2_2 \\ H_1: \sigma^2_1 \neq \sigma^2_2$
+
+Aplicamos el test
+
+```{r}
+var.test(cardio_clean$imc[cardio_clean$gender=="Mujer"],
+         cardio_clean$imc[cardio_clean$gender=="Hombre"],
+         alternative = "two.sided", conf.level = 0.95)
+```
+
+Como el p-valor es menor que 0.05 (valor por defecto de *alpha*) no podemos aceptar la hipótesis nula, por lo que descartamos igualdad de varianzas en las dos poblaciones.
+
+En consecuencia, aplicaremos un test bilateral de dos muestras independientes sobre la media con varianza desconocida y diferente
+
+```{r}
+t.test(cardio_clean$imc[cardio_clean$gender=="Mujer"],
+       cardio_clean$imc[cardio_clean$gender=="Hombre"],
+       alternative="two.sided", var.equal=FALSE, conf.level = 0.95)
+```
+
+Observamos que el p-valor es menor que 0.05, por lo que no se puede aceptar la hipótesis nula. Entonces, el Índice de Masa Corporal es diferentes para los hombres y las mujeres de la muestra con un 95% de nivel de confianza.
+
+Podemos ahondar un poco más y plantear la hipótesis de si el IMC de los hombres es superior al de las mujeres. El contraste sería el siguiente
+
+$H_0: \mu_{hombres} = \mu_{mujeres} \\ H_1: \mu_{hombres} > \mu_{mujeres}$
+
+En este caso, como ya sabemos que las varianzas son diferentes, el test será unilateral de cola derecha para dos muestras independientes sobre la media con varianza desconocida y diferente
+
+```{r}
+t.test(cardio_clean$imc[cardio_clean$gender=="Hombre"],
+       cardio_clean$imc[cardio_clean$gender=="Mujer"],
+       alternative="greater", var.equal=FALSE, conf.level = 0.95)
+```
+
+Como obtenemos un p-valor de 1, no podemos rechazar la hipótesis nula, por lo que los hombres de la muestra no tienen un IMC mayor que el de las mujeres con un 95% de nivel de confianza.
+
+
+Para finalizar este apartado de hipótesis, veamos otro contraste muy interesante. Nos preguntamos si el nivel de presión arterial es mayor en las personas con alguna enfermedad cardiovascular que en las personas sin este tipo de enfermedad. El contraste en este caso es
+
+$H_0: \mu_{cardiovascular\ desease} = \mu_{no\ cardiovascular\ desease} \\ H_1: \mu_{cardiovascular\ desease} > \mu_{no\ cardiovascular\ desease}$
+
+Empezaremos estudiando si estamos antes varianzas iguales o diferentes
+
+```{r}
+var.test(cardio_clean$blood_pressure[
+        cardio_clean$cardiovascular_disease=="Sí"],
+         cardio_clean$blood_pressure[
+                 cardio_clean$cardiovascular_disease=="No"],
+         alternative = "two.sided", conf.level = 0.95)
+```
+
+Como el p-valor es casi 0 no podemos aceptar la hipótesis nula de igualdad de varianzas, por lo que aplicaremos un test de cola derecha para dos muestras independientes sobre la media con varianza desconocida y diferente
+
+```{r}
+t.test(cardio_clean$blood_pressure[cardio_clean$cardiovascular_disease=="Sí"],
+       cardio_clean$blood_pressure[cardio_clean$cardiovascular_disease=="No"],
+       alternative="greater", var.equal=FALSE, conf.level = 0.95)
+```
+
+Obtenemos un p-valor menor que 0.05, por lo que, con un 95% de confianza, no podemos aceptar la hipótesis nula, es decir, las presión arterial media es mayor en personas con enfermedades cardiovasculares que en personas sanas, resultado que era de esperarse.
+
+
+Realizaremos a continuación un algoritmo de clasificación, la regresión logística, cuya variable dependiente o endógena será "cardiovascular_disease". Elegiremos una serie de variables independientes o exógenas y no incluiremos aquellas que puedan presentar problemas de multicolinealidad
+
+```{r}
+# Elegimos 2/3 para el conjunto de entrenamiento
+smp_size <- floor(2/3 * nrow(cardio_clean))
+
+# Establecemos la semilla  para que el ejemplo sea reproducible
+set.seed(222)
+train_ind <- sample(seq_len(nrow(cardio_clean)), size = smp_size)
+
+# Establecemos lo conjuntos de entrenamiento y prueba
+cardio_train <- cardio_clean[train_ind, ]
+cardio_test <- cardio_clean[-train_ind, ]
+```
+
+Vamos a ver con resúmenes tabulares y gráficos que comparan los índices de rendimiento de los modelos.
+
+```{r}
+# Warning: When comparing models, please note that probably not all models were 
+# fit from ame data.
+lm1 <- lm(age~cardiovascular_disease, data=cardio_train)
+lm2 <- lm(age~cardiovascular_disease+height, data=cardio_train)
+lm3 <- lm(age~cardiovascular_disease+height+weight, data=cardio_train)
+lm4 <- lm(age~cardiovascular_disease+smoking+height+weight, data=cardio_train)
+lm5 <- lm(age~cardiovascular_disease+gender+smoking+height+
+            weight, data=cardio_train)
+```
+
+```{r}
+summary(lm5)
+```
+
+
+```{r}
+library(performance)
+comp <- compare_performance(lm1, lm2, lm3, lm4, lm5)
+comp
+```
+
+```{r}
+library(see)
+
+plot(comp)
+```
+
+
+Realizamos ahora la regresion con varias variables
+
+```{r}
+# Realizamos la regresión
+logit_model <- glm(formula=cardiovascular_disease~age+gender+smoking+
+                   physical_activity+group_imc+glucose+alcohol_intake+
+                   hypertension+cholesterol, data=cardio_train,
+                   family=binomial)
+
+# Estadísticas del modelo
+summary(logit_model)
+```
+
+Si nos fijamos en la significancia de las variables, solo hay una categoría no significativa (glucose: Por encima de lo normal). En cuanto a las demás, todas son significativas al 0.1% excepto dos categorías que son significativas al 1% (smoking: Sí; alcohol_intake: Sí).  
+Para ver el incremento o decremento en términos de probabilidad de cada variable exógena sobre la variable endógena debemos estudiar los Odd Ratio (OR)
+
+```{r}
+exp(coefficients(logit_model))
+```
+
+Estudiando los OR que tienen un mayor impacto, vemos cómo las personas con hipertensión tienen una probabilidad de padecer una enfermedad cardiovascular 9 veces mayor en comparación con aquellas que tienen la tensión baja (categoría de referencia) y aquellas que tienen la presión arterial normal-alta tienen dicha probabilidad 8.8 veces mayor; las personas que tienen el colesterol muy por encima de lo normal tienen una probabilidad 3.44 veces mayor de padecer este tipo de enfermedades en comparación con aquellas que tienen unos niveles de colesterol normales (categoría de referencia); y las personas obesas o con sobrepeso poseen 2.81 y 2.07 veces, respectivamente, más probabilidades de tener una enfermedad cardiovascular en comparación con aquellas que tienen un peso inferior al normal (categoría de referencia). Por lo tanto, podemos concluir que en nuestro modelo las tres variables que más influencia tienen a la hora de padecer una enfermedad cardiovascular son la hipertensión, el colesterol y el Índice de Masa Corporal, lo cual, de primeras, se asemeja bastante a la realidad.
+
+Una vez hecha la regresión y estudiado los OR, calculamos la matriz de confusión para ver la precisión del modelo
+
+```{r}
+# Hacemos un attach de los datos para que sea más fácil su manejo
+attach(cardio_clean)
+
+# Valores predichos:
+predicted_value <- predict(logit_model, cardio_test, type ="response")
+
+# Valores predichos que tienen una probabilidad de más del 50%:
+predicted_class <- ifelse(predicted_value > 0.5, yes = "Sí", no = "No")
+
+# Matriz de confusión
+confusionMatrix(table(predicted_class,
+                      cardio_test[["cardiovascular_disease"]]),
+                positive = "Sí")
+```
+
+El modelo ha predicho 3478 falsos positivos y 4155 falsos negativos. Su precisión es del 66.62%, siendo la sensibilidad (predicción de verdaderos positivos) del 63.44% y la especificidad (predicción de verdaderos negativos) del 69.76%. Por lo tanto, podemos decir que la calidad es normal, ya que no es ni muy alta ni muy baja.  
+Representemos de forma gráfica la matriz de confusión
+
+```{r}
+cfmtx <- confusionMatrix(table(predicted_class,
+                      cardio_test[["cardiovascular_disease"]]),
+                positive = "Sí")
+fourfoldplot(cfmtx$table)
+```
+
+Seguidamente, graficamos la curva de ROC para tener una representación gráfica de la sensibilidad frente a la especificidad
+
+```{r}
+roc(cardio_train$cardiovascular_disease ~ logit_model$fitted.values,
+    plot = TRUE, legacy.axes = TRUE, percent = TRUE,
+    xlab = "Especificidad", ylab = "Sensibilidad", col = "#377eb8",
+    lwd = 2, print.auc = TRUE)
+```
+
+Podemos apreciar cómo obtenemos un AUC del 72.8%, lo que nos indica que este modelo tiene una probabilidad del 72.8% de clasificar a los pacientes enfermos como enfermos (sensibilidad) y a los exentos de enfermedad como sanos (especificidad).
+
+
+Finalizaremos este apartado realizando otro método de clasificación: el algoritmo de aprendizaje supervisado de árbol de decisión. Así, podremos ver también como clasifica el modelo a las personas del dataset y veremos la precisión que tiene, comparándola con el obtenida mediante el método de regresión logística. Utilizaremos la técnica conocida como CART: Classification And Regression Trees. La implementación particular de CART que usaremos es la Recursive Partitioning and Regression Trees o RPART. De forma general, lo que hace este algoritmo es encontrar la variable independiente que mejor separa nuestros datos en grupos, que se corresponden con las categorías de la variable objetivo. Esta mejor separación es expresada con una regla y a cada regla le corresponde un nodo.
+
+Comenzamos cambiando los tipos de todas las variables que tenemos a factor, pues la función que utilizaremos, rpart(), [ejecutará un árbol de regresión si la variable de respuesta es numérica, y un árbol de clasificación si es un factor](https://rstudio-pubs-static.s3.amazonaws.com/27179_e64f0de316fc4f169d6ca300f18ee2aa.html).
+
+```{r}
+# Creamos un nuevo dataset para no sobrescribir el que ya tenemos
+cardio_clean_factor <- cardio_clean
+
+# Vemos las variables numéricas que tenemos
+nums <- unlist(lapply(cardio_clean_factor, is.numeric))
+
+# Las convertimos en tipo factor
+cardio_clean_factor[,nums] <- lapply(cardio_clean_factor[,nums], factor)
+
+# Nos quedamos con las variables que utilizaremos, que serán solamente las
+# discretas. Además, excluiremos todas aquellas que puedan generar problemas 
+# de multicolinealidad
+cardio_clean_factor <-  subset(cardio_clean_factor,select=-c(
+        age,height,weight,systolic_blood_pressure,
+        diastolic_blood_pressure,imc,blood_pressure,group_height,
+        group_weight))
+```
+
+Ahora que tenemos el dataset preparado, crearemos los sets de entrenamiento y prueba, pero antes desordenaremos las observaciones ya que nos interesa debido a que las tenemos ordenados
+
+```{r}
+set.seed(666)
+cardio_clean_factor <- cardio_clean_factor[sample(nrow(cardio_clean_factor)),]
+```
+
+```{r}
+smp_size <- floor(2/3 * nrow(cardio_clean_factor))
+
+# Establecemos la semilla  para que el ejemplo sea reproducible
+set.seed(789)
+train_ind <- sample(seq_len(nrow(cardio_clean_factor)), size = smp_size)
+
+# Establecemos lo conjuntos de entrenamiento y prueba
+cardio_train <- cardio_clean_factor[train_ind, ]
+cardio_test <- cardio_clean_factor[-train_ind, ]
+```
+
+Procedemos a entrenar el modelo
+
+```{r}
+rpart_tree <- rpart(formula = cardiovascular_disease~., data = cardio_train)
+
+# Visualizamos el árbol de decisión
+rpart.plot(rpart_tree)
+```
+
+
+Calculamos la matriz de confusión para ver la calidad del modelo
+
+```{r}
+predicted_model <- predict(rpart_tree, cardio_test, type="class")
+
+confusionMatrix(table(predicted_model,
+                      cardio_test[["cardiovascular_disease"]]),
+                positive = "Sí")
+```
+
+Se puede apreciar que la precisión del modelo ha disminuido un poco con respecto al modelo de regresión, pues antes era de un 66.62% y ahora es de un 65.16%. Por lo tanto, su calidad es peor. En cuanto a la predicción, este ha predicho 3657 falsos positivos y 4310 falsos negativos, siendo la sensibilidad del 61.83% y la especificidad del 68.4%.  
+Vemos de forma gráfica la matriz de confusión
+
+```{r}
+cfmtx_2 <- confusionMatrix(table(predicted_model,
+                      cardio_test[["cardiovascular_disease"]]),
+                positive = "Sí")
+fourfoldplot(cfmtx_2$table)
+```
+
+Graficamos ahora la curva de ROC y vemos el AUC
+
+```{r}
+probs <- predict(rpart_tree, cardio_test, type = "prob")[,2]
+pred <- prediction(probs, cardio_test$cardiovascular_disease)
+perf <- ROCR::performance(pred, "tpr" , "fpr")
+plot(perf,col="red", main="Curva ROC")
+abline(0,1, lty = 8, col = "grey")
+
+```
+```{r}
+
+# Calculamos el área bajo la curva de ROC (AUC)
+perf_2 <- ROCR::performance(pred, "auc")
+cat("El área bajo la curva de ROC (AUC) es: ", perf_2@y.values[[1]])
+
+```
+
+Fijándonos en el valor del AUC, podemos afirmar que el modelo tiene una probabilidad del 68.46% de clasificar a los pacientes enfermos como enfermos y a los no enfermos como sanos.
+
+Pasamos a estudiar la importancia de las variables exógenas en el árbol de decisión
+
+```{r}
+rpart_tree$variable.importance
+```
+
+Vemos como, al igual que ocurría en la regresión logística, las dos variables más importantes y que más influyen a la hora de padecer o no enfermedades cardiovasculares son la hipertensión y el colesterol. La diferencia más notable es que mediante el modelo de regresión la tercera variable más influyente era el IMC y en el árbol de decisión es la edad de la persona. Esto lo podemos ver también de forma gráfica
+
+```{r}
+df <- data.frame(imp = rpart_tree$variable.importance)
+df2 <- df %>% 
+        tibble::rownames_to_column() %>% 
+        dplyr::rename("variable" = rowname) %>% 
+        dplyr::arrange(imp) %>%
+        dplyr::mutate(variable = forcats::fct_inorder(variable))
+ggplotly(ggplot(df2) +
+        geom_col(aes(x = variable, y = imp),
+                 col = "black", fill=rainbow(n=length(df$imp)),
+                 show.legend = F) + coord_flip() + scale_fill_grey() +
+        theme_bw())
+```
+
+Vemos que no todas las variables que se han utilizado para clasificar la variable objetivo son importantes. Solo las cuatro que vemos en el gráfico son aquellas que el árbol ha tenido en cuenta para dicha clasificación, mientras que el resto han sido desechadas.
+
+
+\pagebreak
+
+# 5. Representación de los resultados a partir de tablas y gráficas.
+
+
+
+\pagebreak
+
+# 6. Resolución del problema. A partir de los resultados obtenidos, ¿cuáles son las conclusiones? ¿Los resultados permiten responder al problema?
+
+En base al estudio realizado, se han obtenido unos resultados bastante interesantes. En primer lugar, mediante los contrastes de hipótesis realizados hemos visto que, con un 95% de confianza, las presión arterial media es mayor en personas con enfermedades cardiovasculares que en personas sanas. En segundo lugar, gracias al modelo de regresión logística vimos que las variables categóricas que más influyen a al hora de padecer una enfermedad cardiovascular son la hipertensión, el colesterol y el peso de la persona, siendo la precisión de dicho modelo del 66.62%. Finalmente, una vez aplicado otro algoritmo de clasificación como el árbol de decisión se observó que, con una calidad del 65.16% (algo menor que la del modelo anterior), de nuevo, las dos variables que más importancia tienen a la hora de padecer o no una enfermedad cardiovascular fueron la hipertensión y el colesterol, mientras que la tercera variable, a diferencia del modelo de regresión, fue el peso de la persona, seguida de la glucosa en sangre. Por lo tanto, se ha conseguido responder a la pregunta que se formuló al inicio del estudio, ya que ahora podemos afirmar, en base a los resultados obtenidos, que unos niveles de presión en sangre altos (hipertensión) y unos niveles de colesterol muy por encima de lo normal (en este orden) tienen una influencia directa a la hora de aumentar la probabilidad de padecer una enfermedad cardiovascular. Además, un Índice de Masa corporal alto (persona obesa) (en base la regresión logística) o el aumento de la edad (en base al árbol de decisión) son también factores que tienen un peso importante sobre este tipo de enfermedades.
+
+
+\pagebreak
+
+# 7. Código: Hay que adjuntar el código, preferiblemente en R, con el que se ha realizado la limpieza, análisis y representación de los datos. Si lo preferís, también podéis trabajar en Python.
+
+El código realizado en lenguaje R se puede ver en el repositorio de GitHub, concretamente en la carpeta *code*.
+
+Puede consultar el proyecto en:
+
+  * ### [GITHUB](https://github.com/zumaiaUOC/zumaiaUOC.github.io)  
+  
+  * ### [DATA](https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/data)    
+  
+  * ### [CODE](https://github.com/zumaiaUOC/zumaiaUOC.github.io/tree/main/cod)      
+
+\pagebreak
+
+
+# Contribuciones al trabajo
+
+| Contribuciones                | Firma    |
+| ----------------------------- | -------- |
+| Investigación Previa          | ORM, ARP |
+| Redacción de las respuestas   | ORM, ARP |
+| Desarrollo código             | ORM, ARP |
+
+
