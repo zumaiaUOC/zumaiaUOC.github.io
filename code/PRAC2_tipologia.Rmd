@@ -6,12 +6,6 @@ degree: "Master Ciencia de datos"
 institute: "Universitat Oberta de Catalunya"
 toc-title: Índice
 output:
-  pdf_document: 
-    latex_engine: xelatex
-    highlight: zenburn
-    toc: yes
-    fig_caption: yes
-    keep_tex: yes
   html_document:
     highlight: default
     code_folding: show   # mostrar boton para mostrar o no el código
@@ -23,9 +17,14 @@ output:
     toc_float: true # tabla contenidos flotante
     toc_depth: 3
     toc_collapsed: true
-    css: "style.css"
     includes:
       in_header: header.html
+  pdf_document: 
+    latex_engine: xelatex
+    highlight: zenburn
+    toc: yes
+    fig_caption: yes
+    keep_tex: yes
   word_document: default
 urlcolor: blue
 header-includes:
@@ -739,16 +738,15 @@ RMSE_NewData <- sqrt(mean(error1^2))
 ```
 
 ```{r}
-library(kableExtra)
+#library(kableExtra)
 Method <- c("Train/Test Split")
 ModelRMSE <- c(RMSE_Model)
 RMSENewData <- c(RMSE_NewData)
 
 table1 <- data.frame(Method, ModelRMSE, RMSENewData)
 
-kable(table1) %>% 
-  kable_styling(c("striped", "bordered")) %>%
-  column_spec(2:3, border_left = T)
+table1
+# kable(table1) %>% kable_styling(c("striped", "bordered")) %>%column_spec(2:3, border_left = T)
 ```
 
 Estos RMSE se compararán con el resultado obtenido mediante la metodología de validación cruzada.
@@ -757,7 +755,7 @@ Estos RMSE se compararán con el resultado obtenido mediante la metodología de 
 
 En la validación cruzada K-fold, el conjunto de datos se divide en k partes separadas. El proceso de entrenamiento se repite k veces. Cada vez, una parte se utiliza como datos de validación y el resto se utiliza para entrenar un modelo. A continuación, se calcula la media del error para evaluar un modelo. Hay que tener en cuenta que la validación cruzada k-fold aumenta los requisitos computacionales para el entrenamiento de nuestro modelo en un factor de k.
 
-En este enfoque, todo el conjunto de entrenamiento se utiliza para predecir el precio de venta en el conjunto de prueba. El número de k seleccionado para el enfoque de validación cruzada es 5.
+En este enfoque, todo el conjunto de entrenamiento se utiliza para predecir el precio de venta en el conjunto de prueba. El número de k seleccionado para el enfoque de validación cruzada es 10.
 
 ```{r}
 trainingdata$cardiovascular_disease <- as.numeric(
@@ -784,9 +782,9 @@ Method <- c("CrossValidation")
 ModelRMSE <- c(RMSE_Modelcv)
 RMSENewData <- c(RMSE_NewDatacv)
 table2 <- data.frame(Method, ModelRMSE, RMSENewData)
-kable(table2) %>% 
-  kable_styling(c("striped", "bordered")) %>%
-  column_spec(2:3, border_left = T)
+
+table2
+#kable(table2) %>% kable_styling(c("striped", "bordered")) %>%column_spec(2:3, border_left = T)
 ```
 
 A continuación se muestran los resultados de los dos enfoques en términos de RMSE.
@@ -794,10 +792,8 @@ A continuación se muestran los resultados de los dos enfoques en términos de R
 ```{r}
 
 table12 <- rbind(table1,table2)
-
-kable(table12) %>% 
-  kable_styling(c("striped", "bordered")) %>%
-  column_spec(2:3, border_left = T)
+table12
+#kable(table12) %>% kable_styling(c("striped", "bordered")) %>%  column_spec(2:3, border_left = T)
 ```
 
 En conclusión, la estrategia de validación cruzada tiene un RMSE menor en los nuevos datos en comparación con el RMSE medio del modelo. Esto indica que el modelo tiene un menor valor predictivo cuando se prueba con los nuevos datos en comparación con el enfoque de división entrenamiento/prueba, en el que el RMSE del conjunto de validación es mucho mayor que el del conjunto de prueba (nuevos datos).
@@ -1071,7 +1067,7 @@ Vemos que no todas las variables que se han utilizado para clasificar la variabl
 
 Dado que hemos desarrollado este punto en el punto 4, en este apartado vamos a aportar información visual adicional y aplicaremos el algoritmo Naive Bayes.
 
-### 5.1 Tabla del dataset
+## 5.1 Tabla del dataset
 
 Los datos del dataset utilizado para la aplicación de los algoritmos y tras la correspondiente ETL es:
 
@@ -1081,7 +1077,7 @@ library(DT)
 datatable(cardio_clean, filter = 'bottom', options = list(pageLength = 5))
 ```
 
-### 5.2 Representaciones gráficas
+## 5.2 Representaciones gráficas
 
 Represantamos mediante un histograma la frecuencia de Enfermos Cardiovasculares relacionados con la Edad   
 
@@ -1108,7 +1104,7 @@ sizetree(data,main="Enfermedad VS sexo VS edad, VS IMC", col=shecol,
          toplab=c("Enfermo" ,"Sexo", "Edad" ,"IMC"))
 ```
 
-### 5.3 Algoritmo Naive Bayes
+## 5.3 Algoritmo Naive Bayes
 
 Naive Bayes es un modelo de predicción basado en la probabilidad Bayesiana. El modelo es muy simple, pero poderoso, en cuanto a que es resultado directo de los datos y su tratamiento se basa en simple estadística bayesiana de la probabilidad condicionada. Hay que tener en cuenta que se asume, por simplificación que las variables son todas sucesos independientes.
 
@@ -1167,7 +1163,7 @@ confusionMatrix(pred,data_test$cardiovascular_disease,positive="Sí")
 Podemos concluir afirmando que el algoritmo de Bayes tiene una precisión del 61.31% o, lo que es lo mismo, una tasa de clasificación errónea del 38.69%, prediciendo 1644 falsos positivos y 7203 falsos negativos. La sensitividad del modelo es del 36.35% (bastante baja) y la especificidad es del 85.77%..
 
 
-### 5.4 Relación Enfermemdad vs IMC y Presión Arterial
+## 5.4 Relación Enfermemdad vs IMC y Presión Arterial
 
 Supongamos que nos interesa saber cómo afecta la enfermedad a la relación entre el IMC y la presión arterial, y cómo afecta el número de cilindros a la relación entre la enfermedad y la presión arterial. Estos efectos condicionales se modelan utilizando un término de interacción multiplicativo de dos vías.
 
@@ -1186,7 +1182,7 @@ interplot(m = lm_age, var1 = "cardiovascular_disease", var2 = "imc", ercolor = "
   geom_point(size = 2, color = "red")
 ```
 
-### 5.5 Intervalo de densidades de los atributos del dataset
+## 5.5 Intervalo de densidades de los atributos del dataset
 
 ```{r, warning=FALSE}
 #library(bayestestR)
@@ -1253,5 +1249,4 @@ El código realizado en lenguaje R se puede ver en el repositorio de GitHub, con
 | Investigación Previa          | ORM, ARP |
 | Redacción de las respuestas   | ORM, ARP |
 | Desarrollo código             | ORM, ARP |
-
 
